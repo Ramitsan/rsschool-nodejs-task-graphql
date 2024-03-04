@@ -50,18 +50,14 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
         }
       });
 
-      // const MemberTypeId = new GraphQLEnumType({
-      //   name: 'MemberTypeId',
-      //   values: {
-      //     BASIC: {value: 'basic'},
-      //     BUSINESS: {value: 'business'},
-      //   }
-      // });
-      const MemberTypeId = new GraphQLScalarType({
-        name: 'MemberTypeId'
-      })
-
-
+      const MemberTypeId = new GraphQLEnumType({
+        name: 'MemberTypeId',
+        values: {
+          basic: {value: 'basic'},
+          business: {value: 'business'},
+        }
+      });
+ 
       console.log('variables: ', req.body.variables);
       try {
         const result = await graphql({
