@@ -1,6 +1,14 @@
 import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { createGqlResponseSchema, gqlResponseSchema } from './schemas.js';
-import { GraphQLInterfaceType, GraphQLObjectType, GraphQLSchema, GraphQLString, graphql, buildSchema, GraphQLFloat, GraphQLInt, GraphQLList, GraphQLBoolean, GraphQLEnumType, GraphQLScalarType } from 'graphql';
+import { GraphQLObjectType, 
+  GraphQLSchema, 
+  GraphQLString, 
+  graphql, 
+  GraphQLFloat, 
+  GraphQLInt, 
+  GraphQLList, 
+  GraphQLBoolean, 
+  GraphQLEnumType } from 'graphql';
 import { UUIDType } from './types/uuid.js';
 
 const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
@@ -14,12 +22,22 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
       },
     },
     async handler(req) {
+      const ProfileType = new GraphQLObjectType({
+        name: 'Profile',
+        fields: {
+          id: { type: GraphQLString },
+          isMale: { type: GraphQLBoolean },
+          yearOfBirth: { type: GraphQLInt }
+        }
+      });
+      
       const UserType = new GraphQLObjectType({
         name: 'User',
         fields: {
           id: { type: GraphQLString },
           name: { type: GraphQLString },
-          balance: { type: GraphQLFloat }
+          balance: { type: GraphQLFloat },
+          profile: {type: ProfileType}
         }
       });
 
@@ -39,16 +57,7 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
           title: { type: GraphQLString },
           content: { type: GraphQLString }
         }
-      });
-
-      const ProfileType = new GraphQLObjectType({
-        name: 'Profile',
-        fields: {
-          id: { type: GraphQLString },
-          isMale: { type: GraphQLBoolean },
-          yearOfBirth: { type: GraphQLInt }
-        }
-      });
+      });  
 
       const MemberTypeId = new GraphQLEnumType({
         name: 'MemberTypeId',
@@ -160,11 +169,16 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
               });
             },
             profile: ({ id }) => {
-              return fastify.prisma.profile.findUnique({
-                where: {
-                  id: id,
-                },
-              });
+              try {
+                return fastify.prisma.profile.findUnique({
+                  where: {
+                    id: id,
+                  },
+                });
+              }
+             catch(err) {
+              return null;
+             }
             }
           }
         })
