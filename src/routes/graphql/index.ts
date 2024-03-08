@@ -22,24 +22,6 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
       },
     },
     async handler(req) {
-      const ProfileType = new GraphQLObjectType({
-        name: 'Profile',
-        fields: {
-          id: { type: GraphQLString },
-          isMale: { type: GraphQLBoolean },
-          yearOfBirth: { type: GraphQLInt }
-        }
-      });
-      
-      const UserType = new GraphQLObjectType({
-        name: 'User',
-        fields: {
-          id: { type: GraphQLString },
-          name: { type: GraphQLString },
-          balance: { type: GraphQLFloat },
-          profile: {type: ProfileType}
-        }
-      });
 
       const MemberType = new GraphQLObjectType({
         name: 'MemberType',
@@ -50,6 +32,16 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
         }
       });
 
+      const ProfileType = new GraphQLObjectType({
+        name: 'Profile',
+        fields: {
+          id: { type: GraphQLString },
+          isMale: { type: GraphQLBoolean },
+          yearOfBirth: { type: GraphQLInt },
+          memberType: {type: MemberType}
+        }
+      });
+
       const PostType = new GraphQLObjectType({
         name: 'Post',
         fields: {
@@ -57,7 +49,18 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
           title: { type: GraphQLString },
           content: { type: GraphQLString }
         }
-      });  
+      });
+      
+      const UserType = new GraphQLObjectType({
+        name: 'User',
+        fields: {
+          id: { type: GraphQLString },
+          name: { type: GraphQLString },
+          balance: { type: GraphQLFloat },
+          profile: {type: ProfileType},
+          posts: {type: new GraphQLList(PostType)}
+        }
+      });   
 
       const MemberTypeId = new GraphQLEnumType({
         name: 'MemberTypeId',
