@@ -38,7 +38,17 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
           id: { type: GraphQLString },
           isMale: { type: GraphQLBoolean },
           yearOfBirth: { type: GraphQLInt },
-          memberType: {type: MemberType}
+          memberType: {type: MemberType, resolve: (parent) => {
+            try {
+              return fastify.prisma.memberType.findUnique({
+                where: {
+                  id: parent.memberTypeId
+                },
+              });
+            } catch {
+                return [];
+            }}
+          },
         }
       });
 
@@ -50,6 +60,14 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
           content: { type: GraphQLString }
         }
       });
+
+      const Subscribed = new GraphQLObjectType({
+        name: 'Subscribed',
+        fields: {
+          subscriberId: { type: GraphQLString },
+          userId: { type: GraphQLString }
+        }        
+      });
       
       const UserType = new GraphQLObjectType({
         name: 'User',
@@ -57,8 +75,26 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
           id: { type: GraphQLString },
           name: { type: GraphQLString },
           balance: { type: GraphQLFloat },
-          profile: {type: ProfileType},
-          posts: {type: new GraphQLList(PostType)}
+          profile: {type: ProfileType, 
+            resolve: (parent) => {
+            try {
+                return fastify.prisma.profile.findUnique({
+                    where: { userId: parent.id }
+                });
+            } catch {
+                return null;
+            }
+        }},
+          posts: {type: new GraphQLList(PostType), resolve: (parent) => {
+            try {
+                return fastify.prisma.post.findMany({
+                    where: { authorId: parent.id }
+                });
+            } catch {
+                return [];
+            }}},
+          userSubscribedTo: { type: new GraphQLList(Subscribed)},
+          subscribedToUser:  { type: new GraphQLList(Subscribed)}
         }
       });   
 
