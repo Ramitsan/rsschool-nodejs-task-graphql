@@ -1,14 +1,16 @@
 import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { createGqlResponseSchema, gqlResponseSchema } from './schemas.js';
-import { GraphQLObjectType, 
-  GraphQLSchema, 
-  GraphQLString, 
-  graphql, 
-  GraphQLFloat, 
-  GraphQLInt, 
-  GraphQLList, 
-  GraphQLBoolean, 
-  GraphQLEnumType } from 'graphql';
+import {
+  GraphQLObjectType,
+  GraphQLSchema,
+  GraphQLString,
+  graphql,
+  GraphQLFloat,
+  GraphQLInt,
+  GraphQLList,
+  GraphQLBoolean,
+  GraphQLEnumType
+} from 'graphql';
 import { UUIDType } from './types/uuid.js';
 
 const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
@@ -38,16 +40,16 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
           id: { type: GraphQLString },
           isMale: { type: GraphQLBoolean },
           yearOfBirth: { type: GraphQLInt },
-          memberType: {type: MemberType, resolve: (parent) => {
-            try {
-              return fastify.prisma.memberType.findUnique({
-                where: {
-                  id: parent.memberTypeId
-                },
-              });
-            } catch {
+          memberType: {
+            type: MemberType, resolve: (parent) => {
+              try {
+                return fastify.prisma.memberType.findUnique({
+                  where: {id: parent.memberTypeId },
+                });
+              } catch {
                 return [];
-            }}
+              }
+            }
           },
         }
       });
@@ -61,74 +63,68 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
         }
       });
 
-      const Subscribed = new GraphQLObjectType({
-        name: 'Subscribed',
-        fields: {
-          subscriberId: { type: GraphQLString },
-          userId: { type: GraphQLString }
-        }        
-      });
-      
       const UserType = new GraphQLObjectType({
         name: 'User',
-        fields: {
+        fields: () => ({
           id: { type: GraphQLString },
           name: { type: GraphQLString },
           balance: { type: GraphQLFloat },
-          profile: {type: ProfileType, 
+          profile: {
+            type: ProfileType,
             resolve: (parent) => {
-            try {
+              try {
                 return fastify.prisma.profile.findUnique({
-                    where: { userId: parent.id }
+                  where: { userId: parent.id }
                 });
-            } catch {
+              } catch {
                 return null;
+              }
             }
-        }},
-          posts: {type: new GraphQLList(PostType), resolve: (parent) => {
-            try {
+          },
+          posts: {
+            type: new GraphQLList(PostType),
+            resolve: (parent) => {
+              try {
                 return fastify.prisma.post.findMany({
-                    where: { authorId: parent.id }
+                  where: { authorId: parent.id }
                 });
-            } catch {
+              } catch {
                 return [];
-            }}},
-          userSubscribedTo: { type: new GraphQLList(Subscribed)},
-          subscribedToUser:  { type: new GraphQLList(Subscribed)}
-        }
-      });   
+              }
+            }
+          },
+          userSubscribedTo: {
+            type: new GraphQLList(UserType),
+            resolve: ({ id }) => {
+              return fastify.prisma.user.findMany({
+                where: { subscribedToUser: { some: { subscriberId: id } } }
+              });
+            },
+          },
+          subscribedToUser: {
+            type: new GraphQLList(UserType),
+            resolve: ({ id }) => {
+              return fastify.prisma.user.findMany({
+                where: { userSubscribedTo: { some: { authorId: id } } }
+              })
+            },
+          }
+        })
+      });
 
       const MemberTypeId = new GraphQLEnumType({
         name: 'MemberTypeId',
         values: {
-          basic: {value: 'basic'},
-          business: {value: 'business'},
+          basic: { value: 'basic' },
+          business: { value: 'business' },
         }
       });
- 
+
       console.log('variables: ', req.body.variables);
       try {
         const result = await graphql({
           source: req.body.query,
           variableValues: req.body.variables,
-          // schema: buildSchema(`
-          // type User {
-          //   id: String
-          //   name: String
-          // }
-
-          // type MemberType {
-          //   id: String
-          //   discount: Float
-          //   postsLimitPerMonth: Int
-          // }
-
-          // type Query {
-          //   users: [User]
-          //   memberTypes: [MemberType]
-          // }
-          // `),
-
           schema: new GraphQLSchema({
             types: [UUIDType],
             query: new GraphQLObjectType({
@@ -215,9 +211,9 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
                   },
                 });
               }
-             catch(err) {
-              return null;
-             }
+              catch (err) {
+                return null;
+              }
             }
           }
         })
